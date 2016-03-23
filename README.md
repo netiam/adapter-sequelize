@@ -22,14 +22,6 @@ Every adapter has to export a public interface with the following requirements.
  * @param {string} type - The type of resource
  * @returns {string|string[]} An ID field or list of ID fields
  */
-getIdNames(type) {
-}
-
-/**
- * Get ID for type
- * @param {string} type - The type of resource
- * @returns {string|number|string[]|number[]} ID value or a list of ID value(s)
- */
 getId(type) {
 }
 
@@ -37,6 +29,14 @@ getId(type) {
  * Get type by model
  * @param {*} model - The model you want a type of
  * @returns {string} The model as string representation aka type
+ */
+getType(model) {
+}
+
+/**
+ * Get model by type
+ * @param {string} type - The model of a specific type
+ * @returns {model} The model for the specified type
  */
 getType(model) {
 }
@@ -77,13 +77,13 @@ update(type, id, opts) {
  * @param {string|number} id - The ID of a resource you wanna delete
  * @returns {Promise}
  */
-delete(type, id) {
+remove(type, id) {
 }
 
 /**
  * Set attributes for a resource
  * @param {string} type - The type of resource you want to set attributes for
- * @param {obuect} resource - The resource you want to set attributes for
+ * @param {object} resource - The resource you want to set attributes for
  * @param {object} attributes - A object literal with attribute names as keys
  * @returns {Promise} The modified resource
  */
