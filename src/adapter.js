@@ -2,8 +2,6 @@ import Promise from 'bluebird'
 import Sequelize from 'sequelize'
 
 export const ID_SEPARATOR = '--'
-export const PATH_SEPARATOR = '.'
-export const VALUE_SEPARATOR = ','
 
 export default function({models}) {
   const registry = {}
@@ -31,11 +29,87 @@ export default function({models}) {
     return _.get(registry, type, undefined)
   }
 
-  function find(type, id, opts) {
+  function create({type, data}) {
+    const model = getModel(type)
 
+    if (_.isObject(data) && !_.isArray(data)) {
+      data = [data]
+    }
+
+    const attributes = _.map(data, document => document.attributes)
+
+    return model.sequelize.transaction(() => {
+      return model
+        .bulkCreate(attributes)
+        .then(documents => {
+          return Promise
+            .all(
+              _.map(documents, (document, index) => {
+                const post = data[index]
+                if (!_.has(post, 'relationships')) {
+                  return Promise.resolve()
+                }
+
+                return Promise.all(
+                  _.map(post.relationships, (relationship, path) => {
+                    return adapter.setRelationship({
+                      model,
+                      document,
+                      path,
+                      resourceIdentifiers: relationship.data
+                    })
+                  })
+                )
+              })
+            )
+            // TODO do we really need to fetch all created instances again (missing relationships)?
+            .then(() => {
+              return model.findAll({
+                where: {id: {$in: _.map(documents, document => document.id)}},
+                include: [{all: true}]
+              })
+            })
+            .then(documents => {
+              documents = _.map(documents, document => document.toJSON())
+
+              if (documents.length === 1) {
+                documents = documents.shift()
+              }
+
+              res.status(201)
+              res.body = convert({
+                documents,
+                model
+              })
+            })
+        })
+    })
   }
 
-  function update(type, id, opts) {
+  function find({type, id, opts}) {
+    const model = getModel(type)
+    // TODO Build query form id + options
+    const query = {}
+    return model
+      .findAll(query)
+      .then(documents => {
+        if (documents.length === 0) {
+          return []
+        }
+
+        if (!id && documents.length !== 1) {
+          throw new Error('A sinle resource should be fetched, but there are zero or more than one documents fetched.')
+        }
+
+        if (!id) {
+          return documents[0].toJSON()
+        }
+
+        return _.map(documents, document => document.toJSON())
+      })
+  }
+
+  function update(type, id, data) {
 
   }
 
